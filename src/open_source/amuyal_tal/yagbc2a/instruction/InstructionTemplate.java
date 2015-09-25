@@ -4,8 +4,9 @@ import open_source.amuyal_tal.yagbc2a.CommandTokens;
 import open_source.amuyal_tal.yagbc2a.InstructionParameterDataBase;
 import open_source.amuyal_tal.yagbc2a.data.Flag;
 import open_source.amuyal_tal.yagbc2a.data.InstructionParameter;
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.MutableBytesArray;
 
 public final class InstructionTemplate
 {
@@ -399,7 +400,7 @@ public final class InstructionTemplate
 
 	public BytesArray assemble(final CommandTokens tokens)
 	{
-		final BytesArray code = new BytesArray();
+		final BytesArray code = new MutableBytesArray();
 
 		if(_code <= 0xFF)
 		{

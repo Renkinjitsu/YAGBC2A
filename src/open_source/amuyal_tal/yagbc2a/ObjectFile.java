@@ -1,6 +1,8 @@
 package open_source.amuyal_tal.yagbc2a;
 
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.MutableBytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.SubBytesArray;
 
 public final class ObjectFile
 {
@@ -11,8 +13,8 @@ public final class ObjectFile
 	public ObjectFile()
 	{
 		_symbolTable = new SymbolTable();
-		_code = new BytesArray();
-		_data = new BytesArray();
+		_code = new MutableBytesArray();
+		_data = new MutableBytesArray();
 	}
 
 	public int appendCode(final BytesArray code)
@@ -34,7 +36,11 @@ public final class ObjectFile
 			final int size
 			)
 	{
-		return _code.getSubArray(offset, size);
+		return new SubBytesArray(
+				_code,
+				offset,
+				size
+				);
 	}
 
 	public BytesArray getDataSegmentSection(
@@ -42,7 +48,11 @@ public final class ObjectFile
 			final int size
 			)
 	{
-		return _data.getSubArray(offset, size);
+		return new SubBytesArray(
+				_data,
+				offset,
+				size
+				);
 	}
 
 	public int getCodeSegmentSize()
@@ -74,9 +84,6 @@ public final class ObjectFile
 			final byte[] data
 			)
 	{
-		for(int i = 0; i < data.length; i++)
-		{
-			_code.setAt(startIndex + i, data[i]);
-		}
+		_code.override(startIndex, data);
 	}
 }

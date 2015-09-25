@@ -4,6 +4,7 @@ import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.InternalErrorException;
 import open_source.amuyal_tal.yagbc2a.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.SymbolTable;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 
 public final class Utils
 {

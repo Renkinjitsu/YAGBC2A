@@ -1,6 +1,6 @@
 package open_source.amuyal_tal.yagbc2a.data;
 
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 
 public abstract class InstructionParameter
 {

@@ -8,8 +8,8 @@ import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.HandledException;
 import open_source.amuyal_tal.yagbc2a.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.SymbolTable;
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 
 public class Linker
 {
