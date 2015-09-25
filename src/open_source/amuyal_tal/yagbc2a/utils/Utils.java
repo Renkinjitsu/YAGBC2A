@@ -57,7 +57,7 @@ public final class Utils
 			final int integer
 			)
 	{
-		assert(0 <= integer && integer <= 0xFFFF);
+		Utils.assertCondition(0 <= integer && integer <= 0xFFFF);
 
 		byte[] bytes = null;
 
@@ -73,7 +73,7 @@ public final class Utils
 			bytes[1] = (byte)(integer);
 		}
 
-		assert(bytes != null);
+		Utils.assertCondition(bytes != null);
 
 		return bytes;
 	}
@@ -179,6 +179,14 @@ public final class Utils
 	{
 		Utils.displayError(new InternalErrorException(throwable));
 		abort();
+	}
+
+	public static void assertCondition(final boolean condition)
+	{
+		if(condition == false)
+		{
+			abort("Assertion failed");
+		}
 	}
 
 	private static void abort()
