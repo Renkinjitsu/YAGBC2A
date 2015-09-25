@@ -112,23 +112,19 @@ public class Linker
 		}
 
 		final SymbolTable.VariableSymbol programNameSymbol = _objectFile.getSymbolTable().getSymbolicVariable(KnownSymbols.PROGRAM_NAME);
-		final String programName = Utils.stringFromSymbol(
-				_objectFile.getDataSegmentSection(
-						programNameSymbol.getAddress(),
-						programNameSymbol.getSize()
-						)
-				);
+		final String programName = _objectFile.getDataSegmentSection(
+				programNameSymbol.getAddress(),
+				programNameSymbol.getSize()
+				).toString();
 
 		String manufacturerCode = "";
 		if(_objectFile.getSymbolTable().isSymbolicVariableDefined(KnownSymbols.MANUFACTURER_CODE))
 		{
 			final SymbolTable.VariableSymbol manufacturerCodeSymbol = _objectFile.getSymbolTable().getSymbolicVariable(KnownSymbols.MANUFACTURER_CODE);
-			manufacturerCode = Utils.stringFromSymbol(
-					_objectFile.getDataSegmentSection(
-							manufacturerCodeSymbol.getAddress(),
-							manufacturerCodeSymbol.getSize()
-							)
-					);
+			manufacturerCode = _objectFile.getDataSegmentSection(
+					manufacturerCodeSymbol.getAddress(),
+					manufacturerCodeSymbol.getSize()
+					).toString();
 		}
 		else if(_objectFile.getSymbolTable().isSymbolDefined(KnownSymbols.MANUFACTURER_CODE))
 		{

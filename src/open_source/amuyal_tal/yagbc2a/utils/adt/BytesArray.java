@@ -57,4 +57,26 @@ public abstract class BytesArray
 			setAt(startIndex + i, bytes[i]);
 		}
 	}
+
+	@Override
+	public String toString()
+	{
+		String string = "";
+
+		for(int i = 0; i < getSize(); i++)
+		{
+			final char ch = (char)getAt(i);
+
+			if(ch == '\0')
+			{
+				break;
+			}
+			else
+			{
+				string += ch;
+			}
+		}
+
+		return string;
+	}
 }

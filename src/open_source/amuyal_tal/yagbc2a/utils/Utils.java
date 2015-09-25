@@ -4,24 +4,9 @@ import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.InternalErrorException;
 import open_source.amuyal_tal.yagbc2a.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.SymbolTable;
-import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 
 public final class Utils
 {
-	public static String stringFromSymbol(
-			final BytesArray bytes
-			)
-	{
-		String string = "";
-
-		for(int i = 0; i < bytes.getSize() && bytes.getAt(i) != '\0'; i++)
-		{
-			string += (char)bytes.getAt(i);
-		}
-
-		return string;
-	}
-
 	public static int getSymbolAbsoluteLocation(
 			final String symbolName,
 			final ObjectFile objectFile
