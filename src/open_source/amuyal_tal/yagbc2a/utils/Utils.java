@@ -189,6 +189,11 @@ public final class Utils
 		}
 	}
 
+	public static void ilegalOperation()
+	{
+		Utils.abort("Ilegal operation");
+	}
+
 	private static void abort()
 	{
 		//TODO: Add cleanups like deleting temporary or incomplete files
