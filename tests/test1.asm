@@ -4,7 +4,7 @@ define string __manufacturer_code "---"
 
 main:
 	LD B,B		;0x40
-	CALL func1	;0xCD8010
+	CALL func1	;0xCD8001
 	HALT		;0x76
 	LD A,(C)	;0xF2
 	LD HL,SP+17	;0xF811
