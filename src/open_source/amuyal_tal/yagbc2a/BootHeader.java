@@ -9,8 +9,9 @@ import open_source.amuyal_tal.yagbc2a.cartridege.MemorySection;
 import open_source.amuyal_tal.yagbc2a.cartridege.ResetHandler;
 import open_source.amuyal_tal.yagbc2a.cartridege.Linker.KnownSymbols;
 import open_source.amuyal_tal.yagbc2a.instruction.InstructionTemplate;
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.MutableBytesArray;
 
 public final class BootHeader
 {
@@ -168,7 +169,7 @@ public final class BootHeader
 		setProgramName(programName);
 		setManufacturerCode(manufacturerCode);
 
-		final BytesArray assembled = new BytesArray();
+		final BytesArray assembled = new MutableBytesArray();
 
 		for(final MemorySection memorySection : _memorySections)
 		{

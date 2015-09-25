@@ -1,7 +1,8 @@
 package open_source.amuyal_tal.yagbc2a.data;
 
-import open_source.amuyal_tal.yagbc2a.utils.BytesArray;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
+import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
+import open_source.amuyal_tal.yagbc2a.utils.adt.MutableBytesArray;
 
 public final class InstructionImmediateNumberTemplate extends InstructionParameter
 {
@@ -102,7 +103,7 @@ public final class InstructionImmediateNumberTemplate extends InstructionParamet
 	@Override
 	public BytesArray assemble(final String string)
 	{
-		final BytesArray code = new BytesArray();
+		final BytesArray code = new MutableBytesArray();
 
 		final int value = Utils.parseValue(string);
 

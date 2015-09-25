@@ -7,20 +7,6 @@ import open_source.amuyal_tal.yagbc2a.SymbolTable;
 
 public final class Utils
 {
-	public static String stringFromSymbol(
-			final BytesArray bytes
-			)
-	{
-		String string = "";
-
-		for(int i = 0; i < bytes.getSize() && bytes.getAt(i) != '\0'; i++)
-		{
-			string += (char)bytes.getAt(i);
-		}
-
-		return string;
-	}
-
 	public static int getSymbolAbsoluteLocation(
 			final String symbolName,
 			final ObjectFile objectFile
