@@ -57,7 +57,7 @@ public final class Utils
 			final int integer
 			)
 	{
-		assert(0 <= integer && integer <= 0xFFFF);
+		Utils.assertCondition(0 <= integer && integer <= 0xFFFF);
 
 		byte[] bytes = null;
 
@@ -73,7 +73,7 @@ public final class Utils
 			bytes[1] = (byte)(integer);
 		}
 
-		assert(bytes != null);
+		Utils.assertCondition(bytes != null);
 
 		return bytes;
 	}
@@ -181,7 +181,20 @@ public final class Utils
 		abort();
 	}
 
-	public static void abort()
+	public static void assertCondition(final boolean condition)
+	{
+		if(condition == false)
+		{
+			abort("Assertion failed");
+		}
+	}
+
+	public static void ilegalOperation()
+	{
+		Utils.abort("Ilegal operation");
+	}
+
+	private static void abort()
 	{
 		//TODO: Add cleanups like deleting temporary or incomplete files
 
