@@ -93,22 +93,22 @@ public class Linker
 		//Get code-start-address
 		if(_objectFile.getSymbolTable().isSymbolicLabelDefined(KnownSymbols.CODE_START_LABEL) == false)
 		{
-			System.out.printf(
+			final String error = String.format(
 					"Code start label `%s` not defined",
 					KnownSymbols.CODE_START_LABEL
 					);
-			Utils.abort();
+			Utils.abort(error);
 		}
 		final int mainAddress = codeMemoryOffset + _objectFile.getSymbolTable().getSymbolicLabelAddress(KnownSymbols.CODE_START_LABEL);
 
 		//Get program name
 		if(_objectFile.getSymbolTable().isSymbolicVariableDefined(KnownSymbols.PROGRAM_NAME) == false)
 		{
-			System.out.printf(
+			final String error = String.format(
 					"Variable `%s` not defined",
 					KnownSymbols.PROGRAM_NAME
 					);
-			Utils.abort();
+			Utils.abort(error);
 		}
 
 		final SymbolTable.VariableSymbol programNameSymbol = _objectFile.getSymbolTable().getSymbolicVariable(KnownSymbols.PROGRAM_NAME);
@@ -132,11 +132,11 @@ public class Linker
 		}
 		else if(_objectFile.getSymbolTable().isSymbolDefined(KnownSymbols.MANUFACTURER_CODE))
 		{
-			System.out.printf(
+			final String error = String.format(
 					"Symbol `%s` should be defined as variable",
 					KnownSymbols.PROGRAM_NAME
 					);
-			Utils.abort();
+			Utils.abort(error);
 		}
 
 		return bootHeader.assemble(

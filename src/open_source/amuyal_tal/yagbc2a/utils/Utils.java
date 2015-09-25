@@ -181,7 +181,7 @@ public final class Utils
 		abort();
 	}
 
-	public static void abort()
+	private static void abort()
 	{
 		//TODO: Add cleanups like deleting temporary or incomplete files
 
