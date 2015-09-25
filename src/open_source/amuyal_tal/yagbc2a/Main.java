@@ -19,6 +19,12 @@ public final class Main
 	 */
 	public static void main(final String[] args)
 	{
+		if(args.length == 0)
+		{
+			System.out.println("YAGBC2A  Copyright (C) 2015  Tal Amuyal");
+			System.exit(0);
+		}
+
 		try
 		{
 			String destFilePath = "a.gb";
