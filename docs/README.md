@@ -4,8 +4,10 @@ Yet Another Gameboy Classic/Color Assembler (YAGBC2A) is yet another Nintendo Ga
 
 This project is published under the <TBD> license.
 
-## Disclaimer
+## License
 
-<TBD>.
+This project is licensed under GPL v3.
 
-Assembler commands are taken form [here](http://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html).
+## Assembly
+
+Instructions are taken form [here](http://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html).
