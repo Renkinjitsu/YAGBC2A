@@ -2,8 +2,6 @@
 
 Yet Another Gameboy Classic/Color Assembler (YAGBC2A) is yet another Nintendo Gameboy compiling tool-chain (assembler + linker) that is made with educational (self teaching) intention. It is made public for others to learn and improve oneself.
 
-This project is published under the <TBD> license.
-
 ## License
 
 This project is licensed under GPL v3.
