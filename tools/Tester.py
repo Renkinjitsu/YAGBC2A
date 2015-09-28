@@ -34,16 +34,16 @@ import os
 Helper functions
 """
 def compile(fileName):
-	os.system(JAVA_DIR + "java -cp " + COMPILER_DIR + " open_source.amuyal_tal.yagbc2a.Main " + TESTS_DIR + "/" + fileName + ".asm -o " + TEST_TEMP_BIN_DIR + "/" + fileName + ".elf")
+	os.system(JAVA_DIR + "java -cp " + COMPILER_DIR + " open_source.amuyal_tal.yagbc2a.Main " + TESTS_DIR + "/" + fileName + ".asm -o " + TEST_TEMP_BIN_DIR + "/" + fileName + ".gb")
 
-	if os.path.isfile(TEST_TEMP_BIN_DIR + "/" + fileName + ".elf"):
+	if os.path.isfile(TEST_TEMP_BIN_DIR + "/" + fileName + ".gb"):
 		return True
 	else:
 		errors.append(file + ".asm couldn't be compiled")
 		return False
 
 def compareCompilation(fileName):
-	with open(TEST_EXPECTATION_DIR + "/" + fileName + ".elf") as expected, open(TEST_TEMP_BIN_DIR + "/" + fileName + ".elf") as result:
+	with open(TEST_EXPECTATION_DIR + "/" + fileName + ".gb") as expected, open(TEST_TEMP_BIN_DIR + "/" + fileName + ".gb") as result:
 		if expected.read() == result.read():
 			return True
 		else:
@@ -55,7 +55,7 @@ def compareCompilation(fileName):
 Clean previous temporary compilations
 """
 for file in os.listdir(TEST_TEMP_BIN_DIR):
-	if file.endswith(".elf"):
+	if file.endswith(".gb"):
 		os.remove(TEST_TEMP_BIN_DIR + "/" + file)
 
 
