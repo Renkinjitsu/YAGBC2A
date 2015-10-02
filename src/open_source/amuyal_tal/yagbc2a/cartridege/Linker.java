@@ -26,8 +26,11 @@ import java.util.List;
 
 import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.HandledException;
-import open_source.amuyal_tal.yagbc2a.ObjectFile;
-import open_source.amuyal_tal.yagbc2a.SymbolTable;
+import open_source.amuyal_tal.yagbc2a.object.LabelSymbol;
+import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
+import open_source.amuyal_tal.yagbc2a.object.StringVariableSymbol;
+import open_source.amuyal_tal.yagbc2a.object.Symbol;
+import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
 import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 
@@ -110,8 +113,22 @@ public class Linker
 
 		final BootHeader bootHeader = new BootHeader();
 
-		//Get code-start-address
-		if(_objectFile.getSymbolTable().isSymbolicLabelDefined(KnownSymbols.CODE_START_LABEL) == false)
+		final int mainAddress = codeMemoryOffset + getCodeStartAddress();
+		final String programName = getProgramName();
+		final String manufacturerCode = getManufacturerCode();
+
+		return bootHeader.assemble(
+				mainAddress,
+				programName,
+				manufacturerCode
+				);
+	}
+
+	private int getCodeStartAddress()
+	{
+		final SymbolTable symbolTable = _objectFile.getSymbolTable();
+
+		if(symbolTable.isSymbolDefined(KnownSymbols.CODE_START_LABEL) == false)
 		{
 			final String error = String.format(
 					"Code start label `%s` not defined",
@@ -119,10 +136,26 @@ public class Linker
 					);
 			Utils.abort(error);
 		}
-		final int mainAddress = codeMemoryOffset + _objectFile.getSymbolTable().getSymbolicLabelAddress(KnownSymbols.CODE_START_LABEL);
 
-		//Get program name
-		if(_objectFile.getSymbolTable().isSymbolicVariableDefined(KnownSymbols.PROGRAM_NAME) == false)
+		final Symbol codeStartSymbol = symbolTable.getSymbol(KnownSymbols.CODE_START_LABEL);
+
+		if((codeStartSymbol instanceof LabelSymbol) == false)
+		{
+			final String error = String.format(
+					"Symbol %s is reserved as the code-start label and thus must be defined as a label",
+					KnownSymbols.CODE_START_LABEL
+					);
+			Utils.abort(error);
+		}
+
+		return codeStartSymbol.getAddress();
+	}
+
+	private String getProgramName()
+	{
+		final SymbolTable symbolTable = _objectFile.getSymbolTable();
+
+		if(symbolTable.isSymbolDefined(KnownSymbols.PROGRAM_NAME) == false)
 		{
 			final String error = String.format(
 					"Variable `%s` not defined",
@@ -131,34 +164,50 @@ public class Linker
 			Utils.abort(error);
 		}
 
-		final SymbolTable.VariableSymbol programNameSymbol = _objectFile.getSymbolTable().getSymbolicVariable(KnownSymbols.PROGRAM_NAME);
-		final String programName = _objectFile.getDataSegmentSection(
-				programNameSymbol.getAddress(),
-				programNameSymbol.getSize()
-				).toString();
+		final Symbol programName = symbolTable.getSymbol(KnownSymbols.PROGRAM_NAME);
 
-		String manufacturerCode = "";
-		if(_objectFile.getSymbolTable().isSymbolicVariableDefined(KnownSymbols.MANUFACTURER_CODE))
-		{
-			final SymbolTable.VariableSymbol manufacturerCodeSymbol = _objectFile.getSymbolTable().getSymbolicVariable(KnownSymbols.MANUFACTURER_CODE);
-			manufacturerCode = _objectFile.getDataSegmentSection(
-					manufacturerCodeSymbol.getAddress(),
-					manufacturerCodeSymbol.getSize()
-					).toString();
-		}
-		else if(_objectFile.getSymbolTable().isSymbolDefined(KnownSymbols.MANUFACTURER_CODE))
+		if((programName instanceof StringVariableSymbol) == false)
 		{
 			final String error = String.format(
-					"Symbol `%s` should be defined as variable",
+					"Symbol `%s` must be defined as string variable",
 					KnownSymbols.PROGRAM_NAME
 					);
 			Utils.abort(error);
 		}
 
-		return bootHeader.assemble(
-				mainAddress,
-				programName,
-				manufacturerCode
-				);
+		return _objectFile.getDataSegmentSection(
+				programName.getAddress(),
+				programName.getSize()
+				).toString();
+	}
+
+	private String getManufacturerCode()
+	{
+		final SymbolTable symbolTable = _objectFile.getSymbolTable();
+
+		if(symbolTable.isSymbolDefined(KnownSymbols.MANUFACTURER_CODE) == false)
+		{
+			final String error = String.format(
+					"Variable `%s` not defined",
+					KnownSymbols.MANUFACTURER_CODE
+					);
+			Utils.abort(error);
+		}
+
+		final Symbol manufacturerCode = symbolTable.getSymbol(KnownSymbols.MANUFACTURER_CODE);
+
+		if((manufacturerCode instanceof StringVariableSymbol) == false)
+		{
+			final String error = String.format(
+					"Symbol `%s` must be defined as string variable",
+					KnownSymbols.PROGRAM_NAME
+					);
+			Utils.abort(error);
+		}
+
+		return _objectFile.getDataSegmentSection(
+				manufacturerCode.getAddress(),
+				manufacturerCode.getSize()
+				).toString();
 	}
 }

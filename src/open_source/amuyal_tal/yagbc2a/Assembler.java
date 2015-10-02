@@ -27,6 +27,11 @@ import java.util.List;
 import open_source.amuyal_tal.yagbc2a.data.InstructionImmediateNumberTemplate;
 import open_source.amuyal_tal.yagbc2a.data.InstructionParameter;
 import open_source.amuyal_tal.yagbc2a.instruction.InstructionTemplate;
+import open_source.amuyal_tal.yagbc2a.object.LabelSymbol;
+import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
+import open_source.amuyal_tal.yagbc2a.object.StringVariableSymbol;
+import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
+import open_source.amuyal_tal.yagbc2a.object.UnresolvedSymbol;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
 
 public final class Assembler
@@ -303,7 +308,11 @@ public final class Assembler
 		else
 		{
 			final String[] parts = lineText.split(":");
-			objectFile.getSymbolTable().defineSymbolicLabel(parts[0], objectFile.getCodeSegmentSize());
+
+			objectFile.getSymbolTable().insert(
+					parts[0],
+					new LabelSymbol(objectFile.getCodeSegmentSize())
+					);
 
 			if(parts.length > 1)
 			{
@@ -353,9 +362,10 @@ public final class Assembler
 		}
 		else
 		{
-			objectFile.getSymbolTable().defineSymbolicLabel(
+			//TODO: Change to a function symbol
+			objectFile.getSymbolTable().insert(
 					parts[1],
-					objectFile.getCodeSegmentSize()
+					new LabelSymbol(objectFile.getCodeSegmentSize())
 					);
 		}
 
@@ -415,10 +425,13 @@ public final class Assembler
 							}
 							else
 							{
-								objectFile.getSymbolTable().defineSymbolicVariable(
+								objectFile.getSymbolTable().insert(
 										name,
-										objectFile.getDataSegmentSize(),
-										value.length() + 1);
+										new StringVariableSymbol(
+												objectFile.getDataSegmentSize(),
+												value.length() + 1
+												)
+										);
 
 								for(int i = 0; i < value.length(); i++)
 								{

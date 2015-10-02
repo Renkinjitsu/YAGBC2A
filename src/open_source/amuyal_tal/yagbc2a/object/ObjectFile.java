@@ -18,7 +18,7 @@
 	Contact information (email): TalAmuyal@gmail.com
 */
 
-package open_source.amuyal_tal.yagbc2a;
+package open_source.amuyal_tal.yagbc2a.object;
 
 import open_source.amuyal_tal.yagbc2a.utils.adt.BytesArray;
 import open_source.amuyal_tal.yagbc2a.utils.adt.MutableBytesArray;

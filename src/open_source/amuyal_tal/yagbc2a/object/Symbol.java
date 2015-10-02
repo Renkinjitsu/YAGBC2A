@@ -18,45 +18,29 @@
 	Contact information (email): TalAmuyal@gmail.com
 */
 
-package open_source.amuyal_tal.yagbc2a;
+package open_source.amuyal_tal.yagbc2a.object;
 
-final class UnresolvedSymbol
+public abstract class Symbol
 {
-	private final String _symbolName;
-	private final int _startIndex;
+	private final int _address;
 	private final int _size;
-	private final SourceLine _sourceLine;
 
-	public UnresolvedSymbol(
-			final String symbolName,
-			final int startIndex,
-			final int size,
-			final SourceLine sourceLine
+	protected Symbol(
+			final int address,
+			final int size
 			)
 	{
-		_symbolName = symbolName;
-		_startIndex = startIndex;
+		_address = address;
 		_size = size;
-		_sourceLine = sourceLine;
 	}
 
-	public String getSymbolName()
+	public int getAddress()
 	{
-		return _symbolName;
-	}
-
-	public int getStartIndex()
-	{
-		return _startIndex;
+		return _address;
 	}
 
 	public int getSize()
 	{
 		return _size;
-	}
-
-	public SourceLine getSourceLine()
-	{
-		return _sourceLine;
 	}
 }
