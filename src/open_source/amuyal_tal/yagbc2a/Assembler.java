@@ -27,6 +27,7 @@ import java.util.List;
 import open_source.amuyal_tal.yagbc2a.data.InstructionImmediateNumberTemplate;
 import open_source.amuyal_tal.yagbc2a.data.InstructionParameter;
 import open_source.amuyal_tal.yagbc2a.instruction.InstructionTemplate;
+import open_source.amuyal_tal.yagbc2a.object.FunctionSymbol;
 import open_source.amuyal_tal.yagbc2a.object.LabelSymbol;
 import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.object.StringVariableSymbol;
@@ -110,13 +111,50 @@ public final class Assembler
 		return objectFile;
 	}
 
+	private class FunctionParsing
+	{
+		private final String _name;
+		private final int _startAddress;
+		private final SourceLine _declerationSourceLine;
+
+		public FunctionParsing(
+				final String name,
+				final int startAddress,
+				final SourceLine declerationSourceLine
+				)
+		{
+			_name = name;
+			_startAddress = startAddress;
+			_declerationSourceLine = declerationSourceLine;
+		}
+
+		public String getName()
+		{
+			return _name;
+		}
+
+		public int getStartAddress()
+		{
+			return _startAddress;
+		}
+
+		public SourceLine getDeclerationSourceLine()
+		{
+			return _declerationSourceLine;
+		}
+	}
+
 	private final List<String> _errors;
 	private final List<UnresolvedSymbol> _unresolvedSymbols;
+
+	private final List<FunctionParsing> _functionParsingData;
 
 	private Assembler()
 	{
 		_errors = new LinkedList<String>();
 		_unresolvedSymbols = new LinkedList<UnresolvedSymbol>();
+
+		_functionParsingData = new LinkedList<FunctionParsing>();
 	}
 
 	private void removeEmptyLines(
@@ -181,22 +219,48 @@ public final class Assembler
 			final ObjectFile objectFile
 			)
 	{
-		final Iterator<SourceLine> iterator = sourceFile.iterator();
-
-		while(iterator.hasNext())
 		{
-			final SourceLine sourceLine = iterator.next();
+			final Iterator<SourceLine> iterator = sourceFile.iterator();
 
-			if(sourceLine.getText().startsWith("func"))
+			while(iterator.hasNext())
 			{
-				parseFunction(sourceLine, objectFile);
-			}
-			else
-			{
-				parseInstruction(sourceLine, objectFile);
-			}
+				final SourceLine sourceLine = iterator.next();
 
-			iterator.remove();
+				if(sourceLine.getText().startsWith("func"))
+				{
+					parseFunctionBegin(sourceLine, objectFile);
+				}
+				else if(sourceLine.getText().equalsIgnoreCase("end"))
+				{
+					parseFunctionEnd(sourceLine, objectFile);
+				}
+				else
+				{
+					parseInstruction(sourceLine, objectFile);
+				}
+
+				iterator.remove();
+			}
+		}
+
+		if(_functionParsingData.isEmpty() == false)
+		{
+			final Iterator<FunctionParsing> iterator = _functionParsingData.iterator();
+
+			while(iterator.hasNext())
+			{
+				final FunctionParsing functionData = iterator.next();
+
+				final String error = String.format(
+						"Marker \"end\" for function `%s` is not present",
+						functionData.getName()
+						);
+
+				handleError(
+						error,
+						functionData.getDeclerationSourceLine()
+						);
+			}
 		}
 	}
 
@@ -327,7 +391,7 @@ public final class Assembler
 		return handleError(error, sourceLine);
 	}
 
-	private void parseFunction(
+	private void parseFunctionBegin(
 			final SourceLine sourceLine,
 			final ObjectFile objectFile
 			)
@@ -362,10 +426,46 @@ public final class Assembler
 		}
 		else
 		{
-			//TODO: Change to a function symbol
+			_functionParsingData.add(
+					new FunctionParsing(
+							parts[1],
+							objectFile.getCodeSegmentSize(),
+							sourceLine
+							)
+					);
+		}
+
+		handleError(error, sourceLine);
+	}
+
+	private void parseFunctionEnd(
+			final SourceLine sourceLine,
+			final ObjectFile objectFile
+			)
+	{
+		String error = null;
+
+		if(_functionParsingData.isEmpty())
+		{
+			error = "Function end with no beginning";
+		}
+		else
+		{
+			//Pop last item
+			final int lastIndex = _functionParsingData.size() - 1;
+			final FunctionParsing data = _functionParsingData.get(lastIndex);
+			_functionParsingData.remove(lastIndex);
+
+			final String functionName = data.getName();
+			final int functionStartAddress = data.getStartAddress();
+			final int functionSize = objectFile.getCodeSegmentSize() - functionStartAddress;
+
 			objectFile.getSymbolTable().insert(
-					parts[1],
-					new LabelSymbol(objectFile.getCodeSegmentSize())
+					functionName,
+					new FunctionSymbol(
+							functionStartAddress,
+							functionSize
+							)
 					);
 		}
 

@@ -37,7 +37,3 @@ Not yet supported.
 #### Variable's value-usage vs. location-usage
 
 Not yet supported.
-
-### Functions
-
-Function ending mark isn't supported yet.

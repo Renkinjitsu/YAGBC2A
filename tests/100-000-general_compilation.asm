@@ -26,4 +26,5 @@ main:
 
 func func1
 	XOR 1CH		;0xEE1C
-RET				;C9
+	RET				;C9
+end
