@@ -8,7 +8,6 @@ This document is a memo that describes the deficiencies in the project in compar
 
 The following types are not yet supported:
 
-- `byte` - An 8-bit number
 - `word` - A 16-bit number
 
 ##### String type

@@ -22,7 +22,7 @@ main:
 	LD (0xBE),SP		;0x08BE00
 	LD (0b10101100),SP	;0x08AC00
 	CALL Z,0d21987		;0xCCE355
-	;LDH A,twelve
+	;LDH A, &twelve
 
 func func1
 	XOR 1CH		;0xEE1C

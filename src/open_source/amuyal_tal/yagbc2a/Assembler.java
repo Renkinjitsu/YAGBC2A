@@ -29,6 +29,7 @@ import open_source.amuyal_tal.yagbc2a.data.InstructionParameter;
 import open_source.amuyal_tal.yagbc2a.instruction.InstructionTemplate;
 import open_source.amuyal_tal.yagbc2a.object.FunctionSymbol;
 import open_source.amuyal_tal.yagbc2a.object.LabelSymbol;
+import open_source.amuyal_tal.yagbc2a.object.NumberVariableSymbol;
 import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.object.StringVariableSymbol;
 import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
@@ -544,9 +545,38 @@ public final class Assembler
 					}
 					break;
 
-					case "8bit":
+					case "byte":
 					{
-						error = "Not implemented yet";
+						try
+						{
+							final int value = Utils.parseValue(parts[3]);
+
+							if(value > 0xFF)
+							{
+								error = "Assigned value exceeds variable capacity";
+							}
+							else if(parts.length > 4)
+							{
+								error = "Unrecognized symbols after variable's value";
+							}
+							else
+							{
+								objectFile.getSymbolTable().insert(
+										name,
+										new NumberVariableSymbol(
+												objectFile.getDataSegmentSize(),
+												1,
+												value
+												)
+										);
+
+								objectFile.appendDataSegment((byte)value);
+							}
+						}
+						catch(final NumberFormatException ex)
+						{
+							error = "Value is not a number";
+						}
 					}
 					break;
 
