@@ -17,8 +17,9 @@ The above may be altered by reconfiguring the proper variables
 """
 Configurations
 """
-JAVA_DIR = ""
-COMPILER_DIR = "bin"
+JAVA_INTERPRETER = "java"
+COMPILED_PROJECT_DIR = "bin"
+COMPILED_PROJECT = "open_source.amuyal_tal.yagbc2a.Main"
 TESTS_DIR = "tests"
 TEST_TEMP_BIN_DIR = "bin"
 TEST_EXPECTATION_DIR = "tests"
@@ -34,16 +35,17 @@ import os
 Helper functions
 """
 def compile(fileName):
-	os.system(JAVA_DIR + "java -cp " + COMPILER_DIR + " open_source.amuyal_tal.yagbc2a.Main " + TESTS_DIR + "/" + fileName + ".asm -o " + TEST_TEMP_BIN_DIR + "/" + fileName + ".gb")
+	compileCommand = JAVA_INTERPRETER + " -cp " + COMPILED_PROJECT_DIR + " " + COMPILED_PROJECT + " " + TESTS_DIR + "/" + fileName + ".asm -o " + TEST_TEMP_BIN_DIR + "/" + fileName + ".gb"
+	os.popen(compileCommand).read()
 
 	if os.path.isfile(TEST_TEMP_BIN_DIR + "/" + fileName + ".gb"):
 		return True
 	else:
-		errors.append(file + ".asm couldn't be compiled")
+		errors.append('`' + fileName + ".asm` couldn't be compiled")
 		return False
 
 def compareCompilation(fileName):
-	with open(TEST_EXPECTATION_DIR + "/" + fileName + ".gb") as expected, open(TEST_TEMP_BIN_DIR + "/" + fileName + ".gb") as result:
+	with open(TEST_EXPECTATION_DIR + "/" + fileName + ".gb", "rb") as expected, open(TEST_TEMP_BIN_DIR + "/" + fileName + ".gb", "rb") as result:
 		if expected.read() == result.read():
 			return True
 		else:
