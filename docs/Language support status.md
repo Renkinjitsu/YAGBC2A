@@ -4,12 +4,6 @@ This document is a memo that describes the deficiencies in the project in compar
 
 ## Syntax
 
-#### Storage types
-
-The following types are not yet supported:
-
-- `word` - A 16-bit number
-
 ##### String type
 
 A string value may contain only the following characters:

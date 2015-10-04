@@ -547,42 +547,21 @@ public final class Assembler
 
 					case "byte":
 					{
-						try
-						{
-							final int value = Utils.parseValue(parts[3]);
-
-							if(value > 0xFF)
-							{
-								error = "Assigned value exceeds variable capacity";
-							}
-							else if(parts.length > 4)
-							{
-								error = "Unrecognized symbols after variable's value";
-							}
-							else
-							{
-								objectFile.getSymbolTable().insert(
-										name,
-										new NumberVariableSymbol(
-												objectFile.getDataSegmentSize(),
-												1,
-												value
-												)
-										);
-
-								objectFile.appendDataSegment((byte)value);
-							}
-						}
-						catch(final NumberFormatException ex)
-						{
-							error = "Value is not a number";
-						}
+						error = parseNumberVariableDefinition(
+								parts,
+								1,
+								objectFile
+								);
 					}
 					break;
 
-					case "16bit":
+					case "word":
 					{
-						error = "Not implemented yet";
+						error = parseNumberVariableDefinition(
+								parts,
+								2,
+								objectFile
+								);
 					}
 					break;
 
@@ -599,6 +578,56 @@ public final class Assembler
 				error,
 				sourceLine
 				);
+	}
+
+	private String parseNumberVariableDefinition(
+			final String parts[],
+			final int bytesCount,
+			final ObjectFile objectFile
+			)
+	{
+		String error = null;
+
+		//parts[] = {"define", "byte" / "word", "<variable name>", "<value>", ...};
+		final int nameIndex = 2;
+		final int valueIndex = 3;
+
+		try
+		{
+			final int value = Utils.parseValue(parts[valueIndex]);
+
+			if(Utils.neededSize(value) > bytesCount)
+			{
+				error = "Assigned value exceeds variable capacity";
+			}
+			else if(parts.length > 4)
+			{
+				error = "Unrecognized symbols after variable's value";
+			}
+			else
+			{
+				objectFile.getSymbolTable().insert(
+						parts[nameIndex],
+						new NumberVariableSymbol(
+								objectFile.getDataSegmentSize(),
+								bytesCount,
+								value
+								)
+						);
+
+				for(int i = 0; i < bytesCount; i++)
+				{
+					final int currentValue = (value >> (i * 8)) & 0xFF;
+					objectFile.appendDataSegment((byte)currentValue);
+				}
+			}
+		}
+		catch(final NumberFormatException ex)
+		{
+			error = "Variable value is not a valid number";
+		}
+
+		return error;
 	}
 
 	private void parseInstruction(
