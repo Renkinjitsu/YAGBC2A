@@ -14,3 +14,10 @@ The test-cases are divided to groups and  sub-groups by numbers for order of exe
 Test-case name example: `010-010-compile_empty_executable.asm`.
 
 The example test is a minimal test for the compiler capabilities that requires nothing except for simple file parsing and the proper generation of the boot-header.
+
+# CompileAll
+
+`CompileAll` is a tool that compiles all of a folders `*.asm` files using YAGBCCA.
+It can be used either as a python module or as a command line application and arguments may be provided for non-default configurations.
+
+For more information, refer to `CompileAll.py`-'s header.
