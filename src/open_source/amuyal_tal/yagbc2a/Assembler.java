@@ -32,8 +32,10 @@ import open_source.amuyal_tal.yagbc2a.object.LabelSymbol;
 import open_source.amuyal_tal.yagbc2a.object.NumberVariableSymbol;
 import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.object.StringVariableSymbol;
+import open_source.amuyal_tal.yagbc2a.object.Symbol;
 import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
 import open_source.amuyal_tal.yagbc2a.object.UnresolvedSymbol;
+import open_source.amuyal_tal.yagbc2a.object.VariableSymbol;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
 
 public final class Assembler
@@ -78,7 +80,7 @@ public final class Assembler
 		 * Dependencies:
 		 *  None
 		 */
-		assembler.resolveVariables(
+		assembler.resolveVariableDefinitions(
 				sourceFile,
 				objectFile
 				);
@@ -87,9 +89,21 @@ public final class Assembler
 		 * Fourth pass
 		 *
 		 * Dependencies:
+		 * - `resolveVariableDefinitions` - resolves symbols marked by this pass
+		 */
+		assembler.translateVariableSymbols(
+				sourceFile,
+				objectFile
+				);
+
+		/*
+		 * Fifth pass
+		 *
+		 * Dependencies:
 		 * - `removeEmptyLines` - no skipping of empty lines is done
 		 * - `resolveLabels` - no labels skipping implemented
-		 * - `resolveFunctionsAndVariables` - no functions and variables skipping implemented
+		 * - `resolveVariableDefinitions` - no variables skipping implemented
+		 * - `translateVariableSymbols` - actual values required
 		 */
 		assembler.translateInstructions(
 				sourceFile,
@@ -97,7 +111,7 @@ public final class Assembler
 				);
 
 		/*
-		 * Fifth pass
+		 * Sixth pass
 		 *
 		 * Dependencies:
 		 * - `translateInstructions` - resolves symbols marked by this pass
@@ -196,7 +210,7 @@ public final class Assembler
 		}
 	}
 
-	private void resolveVariables(
+	private void resolveVariableDefinitions(
 			final SourceFile sourceFile,
 			final ObjectFile objectFile
 			)
@@ -211,6 +225,83 @@ public final class Assembler
 			{
 				parseVariableDefinition(sourceLine, objectFile);
 				iterator.remove();
+			}
+		}
+	}
+
+	private void translateVariableSymbols(
+			final SourceFile sourceFile,
+			final ObjectFile objectFile
+			)
+	{
+		final SymbolTable symbolTable = objectFile.getSymbolTable();
+
+		final Iterator<SourceLine> iterator = sourceFile.iterator();
+
+		while(iterator.hasNext())
+		{
+			final SourceLine sourceLine = iterator.next();
+
+			CommandTokens tokens;
+			try
+			{
+				tokens = new CommandTokens(sourceLine.getText());
+			}
+			catch (final SyntaxException e)
+			{
+				continue; //Skip lines that can't be parsed
+			}
+
+			for(int i = 0; i < tokens.getArgumentsCount(); i++)
+			{
+				final boolean isValueUsage = tokens.getArgument(i).startsWith("*");
+				final boolean isAddressUsage = tokens.getArgument(i).startsWith("&");
+				final boolean isVariableUsed = isValueUsage || isAddressUsage;
+
+				if(isVariableUsed)
+				{
+					final String variableName = tokens.getArgument(i).substring(1);
+
+					if(symbolTable.isSymbolDefined(variableName) == false)
+					{
+						handleError(
+								String.format(
+										"Unrecognized variable `%s`",
+										variableName
+										),
+								sourceLine
+								);
+						continue;
+					}
+
+					final Symbol symbol = symbolTable.getSymbol(variableName);
+					if((symbol instanceof VariableSymbol) == false)
+					{
+						handleError(
+								String.format(
+										"Symbol `%s` is not a variable",
+										variableName
+										),
+								sourceLine
+								);
+						continue;
+					}
+
+					final VariableSymbol variableSymbol = (VariableSymbol)symbol;
+
+					if(isValueUsage)
+					{
+						tokens.replaceArgument(i, variableSymbol.toString());
+					}
+					else //if(isAddressUsage)
+					{
+						final int variableRelativeAddress = variableSymbol.getAddress();
+
+						tokens.replaceArgument(i, "(" + Integer.toString(BootHeader.getSize() + variableRelativeAddress) + ")");
+					}
+
+					sourceLine.resetText(tokens.toString());
+				}
 			}
 		}
 	}
@@ -530,7 +621,8 @@ public final class Assembler
 										name,
 										new StringVariableSymbol(
 												objectFile.getDataSegmentSize(),
-												value.length() + 1
+												value.length() + 1,
+												value
 												)
 										);
 

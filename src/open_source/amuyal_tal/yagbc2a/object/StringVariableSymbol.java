@@ -22,11 +22,22 @@ package open_source.amuyal_tal.yagbc2a.object;
 
 public class StringVariableSymbol extends VariableSymbol
 {
+	private final String _value;
+
 	public StringVariableSymbol(
 			final int address,
-			final int size
+			final int size,
+			final String value
 			)
 	{
 		super(address, size);
+
+		_value = value;
+	}
+
+	@Override
+	public String toString()
+	{
+		return _value;
 	}
 }

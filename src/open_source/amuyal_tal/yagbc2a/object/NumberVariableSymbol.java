@@ -39,4 +39,10 @@ public class NumberVariableSymbol extends VariableSymbol
 	{
 		return _value;
 	}
+
+	@Override
+	public String toString()
+	{
+		return Integer.toString(getValue());
+	}
 }

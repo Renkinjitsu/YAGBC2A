@@ -26,7 +26,3 @@ Missing verification that a name of a variable is not a number and does not cont
 #### Local variable
 
 Not yet supported.
-
-#### Variable's value-usage vs. location-usage
-
-Not yet supported.
