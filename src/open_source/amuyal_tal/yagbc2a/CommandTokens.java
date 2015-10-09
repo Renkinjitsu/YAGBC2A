@@ -74,7 +74,7 @@ public final class CommandTokens
 
 		for(final String arg : _args)
 		{
-			if(arg.isEmpty())
+			if(args.isEmpty())
 			{
 				args = arg;
 			}
