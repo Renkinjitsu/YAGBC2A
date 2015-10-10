@@ -116,39 +116,6 @@ public final class Assembler
 		return assembler.getObjectFile();
 	}
 
-	private class FunctionParsing
-	{
-		private final String _name;
-		private final int _startAddress;
-		private final SourceLine _declerationSourceLine;
-
-		public FunctionParsing(
-				final String name,
-				final int startAddress,
-				final SourceLine declerationSourceLine
-				)
-		{
-			_name = name;
-			_startAddress = startAddress;
-			_declerationSourceLine = declerationSourceLine;
-		}
-
-		public String getName()
-		{
-			return _name;
-		}
-
-		public int getStartAddress()
-		{
-			return _startAddress;
-		}
-
-		public SourceLine getDeclerationSourceLine()
-		{
-			return _declerationSourceLine;
-		}
-	}
-
 	private final ObjectFile _objectFile;
 	private final SourceFile _sourceFile;
 
