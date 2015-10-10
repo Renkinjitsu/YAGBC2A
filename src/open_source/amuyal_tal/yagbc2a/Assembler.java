@@ -44,8 +44,7 @@ public final class Assembler
 			final SourceFile sourceFile
 			) throws HandledException
 	{
-		final Assembler assembler = new Assembler();
-		final ObjectFile objectFile = new ObjectFile();
+		final Assembler assembler = new Assembler(sourceFile);
 
 		/*
 		 * The following are calls for different passes. Each pass may modify the code.
@@ -59,9 +58,7 @@ public final class Assembler
 		 * Dependencies:
 		 *  None
 		 */
-		assembler.removeEmptyLines(
-				sourceFile
-				);
+		assembler.removeEmptyLines();
 
 		/*
 		 * Second pass
@@ -69,10 +66,7 @@ public final class Assembler
 		 * Dependencies:
 		 *  None
 		 */
-		assembler.resolveLabels(
-				sourceFile,
-				objectFile
-				);
+		assembler.resolveLabels();
 
 		/*
 		 * Third pass
@@ -80,10 +74,7 @@ public final class Assembler
 		 * Dependencies:
 		 *  None
 		 */
-		assembler.resolveVariableDefinitions(
-				sourceFile,
-				objectFile
-				);
+		assembler.resolveVariableDefinitions();
 
 		/*
 		 * Fourth pass
@@ -91,10 +82,7 @@ public final class Assembler
 		 * Dependencies:
 		 * - `resolveVariableDefinitions` - resolves symbols marked by this pass
 		 */
-		assembler.translateVariableSymbols(
-				sourceFile,
-				objectFile
-				);
+		assembler.translateVariableSymbols();
 
 		/*
 		 * Fifth pass
@@ -105,10 +93,7 @@ public final class Assembler
 		 * - `resolveVariableDefinitions` - no variables skipping implemented
 		 * - `translateVariableSymbols` - actual values required
 		 */
-		assembler.translateInstructions(
-				sourceFile,
-				objectFile
-				);
+		assembler.translateInstructions();
 
 		/*
 		 * Sixth pass
@@ -116,14 +101,11 @@ public final class Assembler
 		 * Dependencies:
 		 * - `translateInstructions` - resolves symbols marked by this pass
 		 */
-		assembler.translateUnresolvedSymbols(
-				sourceFile,
-				objectFile
-				);
+		assembler.translateUnresolvedSymbols();
 
 		assembler.printErrors();
 
-		return objectFile;
+		return assembler.getObjectFile();
 	}
 
 	private class FunctionParsing
@@ -159,24 +141,30 @@ public final class Assembler
 		}
 	}
 
+	private final ObjectFile _objectFile;
+	private final SourceFile _sourceFile;
+
 	private final List<String> _errors;
 	private final List<UnresolvedSymbol> _unresolvedSymbols;
 
 	private final List<FunctionParsing> _functionParsingData;
 
-	private Assembler()
+	private Assembler(
+			final SourceFile sourceFile
+			)
 	{
+		_objectFile = new ObjectFile();
+		_sourceFile = sourceFile;
+
 		_errors = new LinkedList<String>();
 		_unresolvedSymbols = new LinkedList<UnresolvedSymbol>();
 
 		_functionParsingData = new LinkedList<FunctionParsing>();
 	}
 
-	private void removeEmptyLines(
-			final SourceFile sourceFile
-			)
+	private void removeEmptyLines()
 	{
-		final Iterator<SourceLine> iterator = sourceFile.iterator();
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
 		while(iterator.hasNext())
 		{
@@ -187,12 +175,9 @@ public final class Assembler
 		}
 	}
 
-	private void resolveLabels(
-			final SourceFile sourceFile,
-			final ObjectFile objectFile
-			)
+	private void resolveLabels()
 	{
-		final Iterator<SourceLine> iterator = sourceFile.iterator();
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
 		while(iterator.hasNext())
 		{
@@ -200,7 +185,10 @@ public final class Assembler
 
 			while(sourceLine.getText().contains(":"))
 			{
-				final boolean has_error = parseLabel(sourceLine, objectFile);
+				final boolean has_error = parseLabel(
+						sourceLine,
+						_objectFile.getSymbolTable()
+						);
 
 				if(has_error || sourceLine.isEmpty())
 				{
@@ -210,12 +198,9 @@ public final class Assembler
 		}
 	}
 
-	private void resolveVariableDefinitions(
-			final SourceFile sourceFile,
-			final ObjectFile objectFile
-			)
+	private void resolveVariableDefinitions()
 	{
-		final Iterator<SourceLine> iterator = sourceFile.iterator();
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
 		while(iterator.hasNext())
 		{
@@ -223,20 +208,20 @@ public final class Assembler
 
 			if(sourceLine.getText().startsWith("define "))
 			{
-				parseVariableDefinition(sourceLine, objectFile);
+				parseVariableDefinition(
+						sourceLine,
+						_objectFile.getSymbolTable()
+						);
 				iterator.remove();
 			}
 		}
 	}
 
-	private void translateVariableSymbols(
-			final SourceFile sourceFile,
-			final ObjectFile objectFile
-			)
+	private void translateVariableSymbols()
 	{
-		final SymbolTable symbolTable = objectFile.getSymbolTable();
+		final SymbolTable symbolTable = _objectFile.getSymbolTable();
 
-		final Iterator<SourceLine> iterator = sourceFile.iterator();
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
 		while(iterator.hasNext())
 		{
@@ -306,13 +291,10 @@ public final class Assembler
 		}
 	}
 
-	private void translateInstructions(
-			final SourceFile sourceFile,
-			final ObjectFile objectFile
-			)
+	private void translateInstructions()
 	{
 		{
-			final Iterator<SourceLine> iterator = sourceFile.iterator();
+			final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
 			while(iterator.hasNext())
 			{
@@ -320,15 +302,15 @@ public final class Assembler
 
 				if(sourceLine.getText().startsWith("func"))
 				{
-					parseFunctionBegin(sourceLine, objectFile);
+					parseFunctionBegin(sourceLine);
 				}
 				else if(sourceLine.getText().equalsIgnoreCase("end"))
 				{
-					parseFunctionEnd(sourceLine, objectFile);
+					parseFunctionEnd(sourceLine);
 				}
 				else
 				{
-					parseInstruction(sourceLine, objectFile);
+					parseInstruction(sourceLine);
 				}
 
 				iterator.remove();
@@ -356,14 +338,11 @@ public final class Assembler
 		}
 	}
 
-	private void translateUnresolvedSymbols(
-			final SourceFile sourceFile,
-			final ObjectFile objectFile
-			)
+	private void translateUnresolvedSymbols()
 	{
 		final Iterator<UnresolvedSymbol> iterator = _unresolvedSymbols.iterator();
 
-		final SymbolTable symbolTable = objectFile.getSymbolTable();
+		final SymbolTable symbolTable = _objectFile.getSymbolTable();
 
 		while(iterator.hasNext())
 		{
@@ -383,7 +362,7 @@ public final class Assembler
 			{
 				final int address = Utils.getSymbolAbsoluteLocation(
 						unresolvedSymbol.getSymbolName(),
-						objectFile
+						_objectFile
 						);
 				if(Utils.neededSize(address) > unresolvedSymbol.getSize())
 				{
@@ -399,7 +378,7 @@ public final class Assembler
 				{
 					final byte[] bigEndianAddress = Utils.toByteArray(address);
 					final byte[] littleEndianAddress = Utils.getOtherEndianess(bigEndianAddress);
-					objectFile.setCodeSegmentSection(
+					_objectFile.setCodeSegmentSection(
 							unresolvedSymbol.getStartIndex(),
 							littleEndianAddress
 							);
@@ -450,7 +429,7 @@ public final class Assembler
 
 	private boolean parseLabel(
 			final SourceLine sourceLine,
-			final ObjectFile objectFile
+			final SymbolTable symbolTable
 			)
 	{
 		String error = null;
@@ -465,9 +444,9 @@ public final class Assembler
 		{
 			final String[] parts = lineText.split(":");
 
-			objectFile.getSymbolTable().insert(
+			symbolTable.insert(
 					parts[0],
-					new LabelSymbol(objectFile.getCodeSegmentSize())
+					new LabelSymbol(_objectFile.getCodeSegmentSize())
 					);
 
 			if(parts.length > 1)
@@ -484,8 +463,7 @@ public final class Assembler
 	}
 
 	private void parseFunctionBegin(
-			final SourceLine sourceLine,
-			final ObjectFile objectFile
+			final SourceLine sourceLine
 			)
 	{
 		String error = null;
@@ -502,7 +480,7 @@ public final class Assembler
 					parts[1]
 					);
 		}
-		else if(objectFile.getSymbolTable().isSymbolDefined(parts[1]))
+		else if(_objectFile.getSymbolTable().isSymbolDefined(parts[1]))
 		{
 			error = String.format(
 					"Duplicate symbol `%s`",
@@ -521,7 +499,7 @@ public final class Assembler
 			_functionParsingData.add(
 					new FunctionParsing(
 							parts[1],
-							objectFile.getCodeSegmentSize(),
+							_objectFile.getCodeSegmentSize(),
 							sourceLine
 							)
 					);
@@ -531,8 +509,7 @@ public final class Assembler
 	}
 
 	private void parseFunctionEnd(
-			final SourceLine sourceLine,
-			final ObjectFile objectFile
+			final SourceLine sourceLine
 			)
 	{
 		String error = null;
@@ -550,9 +527,9 @@ public final class Assembler
 
 			final String functionName = data.getName();
 			final int functionStartAddress = data.getStartAddress();
-			final int functionSize = objectFile.getCodeSegmentSize() - functionStartAddress;
+			final int functionSize = _objectFile.getCodeSegmentSize() - functionStartAddress;
 
-			objectFile.getSymbolTable().insert(
+			_objectFile.getSymbolTable().insert(
 					functionName,
 					new FunctionSymbol(
 							functionStartAddress,
@@ -566,7 +543,7 @@ public final class Assembler
 
 	private void parseVariableDefinition(
 			final SourceLine sourceLine,
-			final ObjectFile objectFile
+			final SymbolTable symbolTable
 			)
 	{
 		String error = null;
@@ -579,7 +556,7 @@ public final class Assembler
 		else
 		{
 			final String name = parts[2];
-			if(objectFile.getSymbolTable().isSymbolDefined(name))
+			if(symbolTable.isSymbolDefined(name))
 			{
 				error = String.format("Symbol `%s` previously defined", name);
 			}
@@ -617,10 +594,10 @@ public final class Assembler
 							}
 							else
 							{
-								objectFile.getSymbolTable().insert(
+								symbolTable.insert(
 										name,
 										new StringVariableSymbol(
-												objectFile.getDataSegmentSize(),
+												_objectFile.getDataSegmentSize(),
 												value.length() + 1,
 												value
 												)
@@ -629,9 +606,9 @@ public final class Assembler
 								for(int i = 0; i < value.length(); i++)
 								{
 									final byte byteChar = (byte)value.charAt(i);
-									objectFile.appendDataSegment(byteChar);
+									_objectFile.appendDataSegment(byteChar);
 								}
-								objectFile.appendDataSegment((byte)'\0'); //Add null-termination
+								_objectFile.appendDataSegment((byte)'\0'); //Add null-termination
 							}
 						}
 					}
@@ -642,7 +619,7 @@ public final class Assembler
 						error = parseNumberVariableDefinition(
 								parts,
 								1,
-								objectFile
+								symbolTable
 								);
 					}
 					break;
@@ -652,7 +629,7 @@ public final class Assembler
 						error = parseNumberVariableDefinition(
 								parts,
 								2,
-								objectFile
+								symbolTable
 								);
 					}
 					break;
@@ -675,7 +652,7 @@ public final class Assembler
 	private String parseNumberVariableDefinition(
 			final String parts[],
 			final int bytesCount,
-			final ObjectFile objectFile
+			final SymbolTable symbolTable
 			)
 	{
 		String error = null;
@@ -698,10 +675,10 @@ public final class Assembler
 			}
 			else
 			{
-				objectFile.getSymbolTable().insert(
+				symbolTable.insert(
 						parts[nameIndex],
 						new NumberVariableSymbol(
-								objectFile.getDataSegmentSize(),
+								_objectFile.getDataSegmentSize(),
 								bytesCount,
 								value
 								)
@@ -710,7 +687,7 @@ public final class Assembler
 				for(int i = 0; i < bytesCount; i++)
 				{
 					final int currentValue = (value >> (i * 8)) & 0xFF;
-					objectFile.appendDataSegment((byte)currentValue);
+					_objectFile.appendDataSegment((byte)currentValue);
 				}
 			}
 		}
@@ -723,8 +700,7 @@ public final class Assembler
 	}
 
 	private void parseInstruction(
-			final SourceLine sourceLine,
-			final ObjectFile objectFile
+			final SourceLine sourceLine
 			)
 	{
 		String error = null;
@@ -764,7 +740,6 @@ public final class Assembler
 						instruction = getInstructionPlaceHolder(
 								tokens,
 								i,
-								objectFile,
 								sourceLine
 								);
 						if(instruction == null)
@@ -782,7 +757,7 @@ public final class Assembler
 
 		if(error == null)
 		{
-			objectFile.appendCode(instruction.assemble(tokens));
+			_objectFile.appendCode(instruction.assemble(tokens));
 		}
 		else
 		{
@@ -796,7 +771,6 @@ public final class Assembler
 	private InstructionTemplate getInstructionPlaceHolder(
 			final CommandTokens tokens,
 			final int argumentIndex,
-			final ObjectFile objectFile,
 			final SourceLine sourceLine
 			)
 	{
@@ -816,7 +790,7 @@ public final class Assembler
 				}
 				else
 				{
-					int location = objectFile.getCodeSegmentSize() + instruction.getSize();
+					int location = _objectFile.getCodeSegmentSize() + instruction.getSize();
 					for(int i = argumentIndex; i < instruction.getParametersCount(); i++)
 					{
 						location -= instruction.getParameter(i).getCodeSize();
@@ -840,5 +814,10 @@ public final class Assembler
 		}
 
 		return instruction;
+	}
+
+	private ObjectFile getObjectFile()
+	{
+		return _objectFile;
 	}
 }
