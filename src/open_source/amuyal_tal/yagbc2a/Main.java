@@ -22,7 +22,9 @@ package open_source.amuyal_tal.yagbc2a;
 
 import java.io.IOException;
 
-import open_source.amuyal_tal.yagbc2a.cartridege.Linker;
+import open_source.amuyal_tal.yagbc2a.core.Assembler;
+import open_source.amuyal_tal.yagbc2a.core.Linker;
+import open_source.amuyal_tal.yagbc2a.parsing.SourceFile;
 import open_source.amuyal_tal.yagbc2a.utils.Utils;
 
 /**

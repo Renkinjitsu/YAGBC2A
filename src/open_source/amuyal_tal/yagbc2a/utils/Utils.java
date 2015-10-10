@@ -20,12 +20,12 @@
 
 package open_source.amuyal_tal.yagbc2a.utils;
 
-import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.InternalErrorException;
-import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
-import open_source.amuyal_tal.yagbc2a.object.Symbol;
-import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
-import open_source.amuyal_tal.yagbc2a.object.VariableSymbol;
+import open_source.amuyal_tal.yagbc2a.core.object.ObjectFile;
+import open_source.amuyal_tal.yagbc2a.core.object.Symbol;
+import open_source.amuyal_tal.yagbc2a.core.object.SymbolTable;
+import open_source.amuyal_tal.yagbc2a.core.object.VariableSymbol;
+import open_source.amuyal_tal.yagbc2a.core.object.cartridge.BootHeader;
 
 public final class Utils
 {
