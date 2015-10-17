@@ -421,7 +421,7 @@ public final class Assembler
 
 			symbolTable.insert(
 					parts[0],
-					new LabelSymbol(_objectFile.getCodeSegmentSize())
+					new LabelSymbol(_objectFile.getCodeSegmentSize()) //TODO: WARNING: At this phase, the code segment is always 0!
 					);
 
 			if(parts.length > 1)
