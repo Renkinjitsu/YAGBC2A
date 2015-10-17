@@ -424,14 +424,8 @@ public final class Assembler
 					new LabelSymbol(_objectFile.getCodeSegmentSize()) //TODO: WARNING: At this phase, the code segment is always 0!
 					);
 
-			if(parts.length > 1)
-			{
-				sourceLine.resetText(lineText.substring(parts[0].length() + 1));
-			}
-			else
-			{
-				sourceLine.resetText("");
-			}
+			final int parsedCodeLength = parts[0].length() + 1; //Length of label name + 1 for ':'
+			sourceLine.resetText(lineText.substring(parsedCodeLength).trim()); //Trimming in case of space (e.g. "myLabel: myCode")
 		}
 
 		return handleError(error, sourceLine);
