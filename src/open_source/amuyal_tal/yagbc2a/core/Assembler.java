@@ -23,12 +23,11 @@ package open_source.amuyal_tal.yagbc2a.core;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 import open_source.amuyal_tal.yagbc2a.HandledException;
 import open_source.amuyal_tal.yagbc2a.InstructionDataBase;
 import open_source.amuyal_tal.yagbc2a.OperandDataBase;
-import open_source.amuyal_tal.yagbc2a.core.object.FunctionSymbol;
-import open_source.amuyal_tal.yagbc2a.core.object.LabelSymbol;
 import open_source.amuyal_tal.yagbc2a.core.object.NumberVariableSymbol;
 import open_source.amuyal_tal.yagbc2a.core.object.ObjectFile;
 import open_source.amuyal_tal.yagbc2a.core.object.StringVariableSymbol;
@@ -74,18 +73,28 @@ public final class Assembler
 		 * Dependencies:
 		 *  None
 		 */
-		assembler.resolveLabels();
+		assembler.detectFunctions();
 
 		/*
 		 * Third pass
 		 *
 		 * Dependencies:
-		 *  None
+		 *  - `detectFunctions` - labels may be function local. such labels are registered in
+		 *     the function's symbol table.
+		 */
+		assembler.detectLabels();
+
+		/*
+		 * Fourth pass
+		 *
+		 * Dependencies:
+		 *  - `detectFunctions` - variables may be function local. such variables are registered in
+		 *     the function's symbol table
 		 */
 		assembler.resolveVariableDefinitions();
 
 		/*
-		 * Fourth pass
+		 * Fifth pass
 		 *
 		 * Dependencies:
 		 * - `resolveVariableDefinitions` - resolves symbols marked by this pass
@@ -93,18 +102,21 @@ public final class Assembler
 		assembler.translateVariableSymbols();
 
 		/*
-		 * Fifth pass
+		 * Sixth pass
 		 *
 		 * Dependencies:
 		 * - `removeEmptyLines` - no skipping of empty lines is done
-		 * - `resolveLabels` - no labels skipping implemented
+		 * - `detectFunctions` - no function skipping implemented
+		 * - `detectFunctions` - function data is assigned
+		 * - `detectLabels` - no labels skipping implemented
+		 * - `detectLabels` - label data is assigned
 		 * - `resolveVariableDefinitions` - no variables skipping implemented
 		 * - `translateVariableSymbols` - actual values required
 		 */
 		assembler.translateInstructions();
 
 		/*
-		 * Sixth pass
+		 * Seventh pass
 		 *
 		 * Dependencies:
 		 * - `translateInstructions` - resolves symbols marked by this pass
@@ -122,7 +134,8 @@ public final class Assembler
 	private final List<String> _errors;
 	private final List<UnresolvedSymbol> _unresolvedSymbols;
 
-	private final List<FunctionParsing> _functionParsingData;
+	private final List<Function> _functions;
+	private final List<Label> _labels;
 
 	private Assembler(
 			final SourceFile sourceFile
@@ -134,7 +147,8 @@ public final class Assembler
 		_errors = new LinkedList<String>();
 		_unresolvedSymbols = new LinkedList<UnresolvedSymbol>();
 
-		_functionParsingData = new LinkedList<FunctionParsing>();
+		_functions = new LinkedList<Function>(); //`LinkedList` is the chosen implementation, as only `add(E)` and iterator operations are done
+		_labels = new LinkedList<Label>(); //`LinkedList` is the chosen implementation, as only `add(E)` and iterator operations are done
 	}
 
 	private void removeEmptyLines()
@@ -150,7 +164,51 @@ public final class Assembler
 		}
 	}
 
-	private void resolveLabels()
+	private void detectFunctions()
+	{
+		final Stack<Function> detectedFunctions = new Stack<Function>();
+
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
+
+		while(iterator.hasNext())
+		{
+			final SourceLine sourceLine = iterator.next();
+
+			if(sourceLine.getText().startsWith("func"))
+			{
+				parseFunctionBegin(
+						sourceLine,
+						detectedFunctions
+						);
+				iterator.remove();
+			}
+			else if(sourceLine.getText().equalsIgnoreCase("end"))
+			{
+				parseFunctionEnd(
+						sourceLine,
+						detectedFunctions
+						);
+				iterator.remove();
+			}
+		}
+
+		while(detectedFunctions.isEmpty() == false)
+		{
+			final Function functionData = detectedFunctions.pop();
+
+			final String error = String.format(
+					"Function `%s` isn't termintated, missing \"end\" marker",
+					functionData.getName()
+					);
+
+			handleError(
+					error,
+					functionData.getDecelerationSourceLine()
+					);
+		}
+	}
+
+	private void detectLabels()
 	{
 		final Iterator<SourceLine> iterator = _sourceFile.iterator();
 
@@ -160,12 +218,11 @@ public final class Assembler
 
 			while(sourceLine.getText().contains(":"))
 			{
-				final boolean has_error = parseLabel(
-						sourceLine,
-						_objectFile.getSymbolTable()
+				parseLabel(
+						sourceLine
 						);
 
-				if(has_error || sourceLine.isEmpty())
+				if(sourceLine.isEmpty())
 				{
 					iterator.remove();
 				}
@@ -184,8 +241,7 @@ public final class Assembler
 			if(sourceLine.getText().startsWith("define "))
 			{
 				parseVariableDefinition(
-						sourceLine,
-						_objectFile.getSymbolTable()
+						sourceLine
 						);
 				iterator.remove();
 			}
@@ -268,62 +324,73 @@ public final class Assembler
 
 	private void translateInstructions()
 	{
+		final AddressAssignables addresslessSymbols = new AddressAssignables();
+		addresslessSymbols.addAll(_functions);
+		addresslessSymbols.addAll(_labels);
+		addresslessSymbols.sort();
+
+		final Iterator<SourceLine> iterator = _sourceFile.iterator();
+
+		while(iterator.hasNext())
 		{
-			final Iterator<SourceLine> iterator = _sourceFile.iterator();
+			final SourceLine sourceLine = iterator.next();
 
-			while(iterator.hasNext())
-			{
-				final SourceLine sourceLine = iterator.next();
+			addresslessSymbols.assignAddress(
+					sourceLine.getLineNumber(),
+					_objectFile.getCodeSegmentSize()
+					);
 
-				if(sourceLine.getText().startsWith("func"))
-				{
-					parseFunctionBegin(sourceLine);
-				}
-				else if(sourceLine.getText().equalsIgnoreCase("end"))
-				{
-					parseFunctionEnd(sourceLine);
-				}
-				else
-				{
-					parseInstruction(sourceLine);
-				}
+			parseInstruction(sourceLine);
 
-				iterator.remove();
-			}
+			iterator.remove();
 		}
 
-		if(_functionParsingData.isEmpty() == false)
-		{
-			final Iterator<FunctionParsing> iterator = _functionParsingData.iterator();
-
-			while(iterator.hasNext())
-			{
-				final FunctionParsing functionData = iterator.next();
-
-				final String error = String.format(
-						"Marker \"end\" for function `%s` is not present",
-						functionData.getName()
-						);
-
-				handleError(
-						error,
-						functionData.getDeclerationSourceLine()
-						);
-			}
-		}
+		addresslessSymbols.assignRemaining(
+				_objectFile.getCodeSegmentSize()
+				);
 	}
 
 	private void translateUnresolvedSymbols()
 	{
 		final Iterator<UnresolvedSymbol> iterator = _unresolvedSymbols.iterator();
 
-		final SymbolTable symbolTable = _objectFile.getSymbolTable();
+		final SymbolTable globalSymbolTable = _objectFile.getSymbolTable();
 
 		while(iterator.hasNext())
 		{
 			final UnresolvedSymbol unresolvedSymbol = iterator.next();
 
-			if(symbolTable.isSymbolDefined(unresolvedSymbol.getSymbolName()) == false)
+			//The owning function is the owner of the symbol usage
+			final Function owningFunction = getOwningFunction(
+					unresolvedSymbol.getSourceLine().getLineNumber()
+					);
+
+			//Data to be searched for
+			SymbolTable symbolTable = null;
+			boolean isFunctionLocal = false;
+
+			if(owningFunction != null)
+			{
+				final SymbolTable functionSymbolTable = owningFunction.getLocalSymbolTable();
+
+				if(functionSymbolTable.isSymbolDefined(
+						unresolvedSymbol.getSymbolName()
+						))
+				{
+					symbolTable = functionSymbolTable;
+					isFunctionLocal = true;
+				}
+			}
+
+			if(symbolTable == null)
+			{
+				if(globalSymbolTable.isSymbolDefined(unresolvedSymbol.getSymbolName()))
+				{
+					symbolTable = globalSymbolTable;
+				}
+			}
+
+			if(symbolTable == null)
 			{
 				handleError(
 						String.format(
@@ -335,27 +402,111 @@ public final class Assembler
 			}
 			else
 			{
-				final int address = Utils.getSymbolAbsoluteLocation(
-						unresolvedSymbol.getSymbolName(),
-						_objectFile
+				final Symbol symbol = symbolTable.getSymbol(
+						unresolvedSymbol.getSymbolName()
 						);
-				if(Utils.neededSize(address) > unresolvedSymbol.getSize())
+
+				if(isFunctionLocal && symbol instanceof VariableSymbol)
 				{
 					handleError(
-							String.format(
-									"Address size of symbol `%s` is too big",
-									unresolvedSymbol.getSymbolName()
-									),
+							"Function-local variables are not supported",
 							unresolvedSymbol.getSourceLine()
 							);
 				}
 				else
 				{
-					final byte[] bigEndianAddress = Utils.toByteArray(address);
-					final byte[] littleEndianAddress = Utils.getOtherEndianess(bigEndianAddress);
+					final int segmentRelativeAddress = symbol.getAddress();
+
+					final int bootHeaderToSegmentOffset =
+							(symbol instanceof VariableSymbol) ? 0 : _objectFile.getDataSegmentSize(); //Data segment precedes code segment
+
+					final int absoluteAddress = BootHeader.getSize() + bootHeaderToSegmentOffset + segmentRelativeAddress;
+
+					Utils.assertCondition(0 <= absoluteAddress && absoluteAddress <= 0xFFFF);
+
+					byte[] addressArray = null;
+
+					//The non-`else` cases are non-standard usage of addresses by specific instructions
+					final InstructionTemplate instruction = unresolvedSymbol.getInstruction();
+					if(instruction.getCommand().equals("JR"))
+					{
+						Utils.assertCondition(unresolvedSymbol.getSize() == 1);
+
+						final int lastOperandIndex = instruction.getParametersCount() - 1;
+						Utils.assertCondition(1 == lastOperandIndex);
+						Utils.assertCondition(unresolvedSymbol.getOperandIndex() == lastOperandIndex);
+
+						//The address of the instruction's beginning
+						final int usageAddress = unresolvedSymbol.getStartIndex() - 1; //'1' is the size of JR (without the address)
+
+						//Wished amount of bytes to skip
+						final int addressesOffset = absoluteAddress - usageAddress;
+
+						//Actual amounts of bytes to skip
+						final int jumpBytes = addressesOffset - 2;
+
+						addressArray = new byte[1];
+						addressArray[0] = (byte)jumpBytes;
+						if(jumpBytes != (int)addressArray[0])
+						{
+							handleError(
+									"Distance between jump command and destination address is too far for a relative jump",
+									unresolvedSymbol.getSourceLine()
+									);
+
+							/*
+							 * No abortion is places here, as it will add to the complexity of this function.
+							 * This is not of any concern, as the compilation has already marked as failed.
+							 */
+						}
+					}
+					else if(instruction.getCommand().equals("LD") &&
+							instruction.getParametersCount() == 2 &&
+							instruction.getParameter(0) == OperandDataBase.searchByName("HL") &&
+							instruction.getParameter(1) == OperandDataBase.searchByName("SP+r8"))
+					{
+						//TODO: Implement together with function-local variables
+
+						handleError(
+								"Function-local variables are not supported",
+								unresolvedSymbol.getSourceLine()
+								);
+					}
+					else if(instruction.getName().equals("LDH"))
+					{
+						addressArray = new byte[1];
+
+						if(absoluteAddress < 0xFF00)
+						{
+							handleError(
+									String.format(
+											"Address size of symbol `%s` is too big",
+											unresolvedSymbol.getSymbolName()
+											),
+											unresolvedSymbol.getSourceLine()
+									);
+
+							/*
+							 * No abortion is places here, as it will add to the complexity of this function.
+							 * This is not of any concern, as the compilation has already marked as failed.
+							 */
+						}
+						else
+						{
+							addressArray[0] = (byte)(absoluteAddress - 0xFF00);
+						}
+					}
+					else //Normal/regular/default case
+					{
+						Utils.assertCondition(unresolvedSymbol.getSize() == 2);
+
+						final byte[] bigEndianAddress = Utils.toByteArray(absoluteAddress);
+						addressArray = Utils.getOtherEndianess(bigEndianAddress);
+					}
+
 					_objectFile.setCodeSegmentSection(
 							unresolvedSymbol.getStartIndex(),
-							littleEndianAddress
+							addressArray
 							);
 				}
 			}
@@ -402,37 +553,43 @@ public final class Assembler
 		}
 	}
 
-	private boolean parseLabel(
-			final SourceLine sourceLine,
-			final SymbolTable symbolTable
+	private void parseLabel(
+			final SourceLine sourceLine
 			)
 	{
-		String error = null;
+		final SymbolTable symbolTable = getInnermostSymbolTable(
+				sourceLine.getLineNumber()
+				);
 
 		final String lineText = sourceLine.getText();
 
 		if(lineText.startsWith(":"))
 		{
-			error = "Label name missing";
+			handleError("Label name missing", sourceLine);
 		}
 		else
 		{
 			final String[] parts = lineText.split(":");
 
-			symbolTable.insert(
-					parts[0],
-					new LabelSymbol(_objectFile.getCodeSegmentSize()) //TODO: WARNING: At this phase, the code segment is always 0!
+			_labels.add(
+					new Label(
+							parts[0],
+							sourceLine,
+							symbolTable
+							)
 					);
 
-			final int parsedCodeLength = parts[0].length() + 1; //Length of label name + 1 for ':'
-			sourceLine.resetText(lineText.substring(parsedCodeLength).trim()); //Trimming in case of space (e.g. "myLabel: myCode")
+			//Remove the parsed code
+			{
+				final int parsedCodeLength = parts[0].length() + 1; //Length of label name + 1 for ':'
+				sourceLine.resetText(lineText.substring(parsedCodeLength).trim()); //Trimming in case of space (e.g. "myLabel: myCode")
+			}
 		}
-
-		return handleError(error, sourceLine);
 	}
 
 	private void parseFunctionBegin(
-			final SourceLine sourceLine
+			final SourceLine sourceLine,
+			final Stack<Function> detectedFunctions
 			)
 	{
 		String error = null;
@@ -463,14 +620,20 @@ public final class Assembler
 					parts[1]
 					);
 		}
+		else if(detectedFunctions.size() > 0)
+		{
+			error = "Nested functions not supported";
+		}
 		else
 		{
-			_functionParsingData.add(
-					new FunctionParsing(
-							parts[1],
-							_objectFile.getCodeSegmentSize(),
-							sourceLine
-							)
+			final Function function = new Function(
+					parts[1],
+					sourceLine,
+					_objectFile.getSymbolTable()
+					);
+
+			detectedFunctions.push(
+					function
 					);
 		}
 
@@ -478,32 +641,26 @@ public final class Assembler
 	}
 
 	private void parseFunctionEnd(
-			final SourceLine sourceLine
+			final SourceLine sourceLine,
+			final Stack<Function> detectedFunctions
 			)
 	{
 		String error = null;
 
-		if(_functionParsingData.isEmpty())
+		if(detectedFunctions.isEmpty())
 		{
 			error = "Function end with no beginning";
 		}
 		else
 		{
-			//Pop last item
-			final int lastIndex = _functionParsingData.size() - 1;
-			final FunctionParsing data = _functionParsingData.get(lastIndex);
-			_functionParsingData.remove(lastIndex);
+			final Function function = detectedFunctions.pop();
 
-			final String functionName = data.getName();
-			final int functionStartAddress = data.getStartAddress();
-			final int functionSize = _objectFile.getCodeSegmentSize() - functionStartAddress;
+			function.setTermintaionSourceLine(
+					sourceLine
+					);
 
-			_objectFile.getSymbolTable().insert(
-					functionName,
-					new FunctionSymbol(
-							functionStartAddress,
-							functionSize
-							)
+			_functions.add(
+					function
 					);
 		}
 
@@ -511,121 +668,171 @@ public final class Assembler
 	}
 
 	private void parseVariableDefinition(
-			final SourceLine sourceLine,
-			final SymbolTable symbolTable
+			final SourceLine sourceLine
 			)
 	{
-		String error = null;
+		final SymbolTable symbolTable = getInnermostSymbolTable(
+				sourceLine.getLineNumber()
+				);
 
 		final String parts[] = sourceLine.getText().split(" ");
 		if(parts.length < 4)
 		{
-			error = "Too little arguments for `define`, should be `define [type] [name] [value]`";
+			handleError(
+					"Too little arguments for `define`, should be `define [type] [name] [value]`",
+					sourceLine
+					);
 		}
 		else
 		{
 			final String name = parts[2];
 			if(symbolTable.isSymbolDefined(name))
 			{
-				error = String.format("Symbol `%s` previously defined", name);
+				handleError(
+						String.format("Symbol `%s` previously defined in current scope", name),
+						sourceLine
+						);
 			}
 			else if(OperandDataBase.searchByName(name) != null)
 			{
-				error = String.format(
-						"Keyword `%s` is reserved as an instruction operand",
-						name
+				handleError(
+						String.format(
+								"Keyword `%s` is reserved as an instruction operand",
+								name
+								),
+						sourceLine
 						);
 			}
 			else
 			{
+				final Function owningFunction = getOwningFunction(
+						sourceLine.getLineNumber()
+						);
+
 				switch(parts[1])
 				{
 					case "string":
 					{
-						String value = sourceLine.getText().substring(
-								parts[0].length() + 1 + parts[1].length() + 1 + parts[2].length() + 1
+						parseStringVariableDefinition(
+								parts,
+								sourceLine,
+								symbolTable,
+								owningFunction
 								);
-
-						if(value.startsWith("\"") == false)
-						{
-							error = "A string litheral must be preceded by quotation mark (\")";
-						}
-						else if(value.endsWith("\"") == false)
-						{
-							error = "A string litheral must be succeeded by quotation mark (\")";
-						}
-						else
-						{
-							value = value.substring(1, value.length() - 1); //Slice the quotation marks
-							if(value.contains("\"")) //TODO: Replace with a Regex that looks for a quotation mark that is not escaped
-							{
-								error = "A string litheral may not include an unescaped quotation mark";
-							}
-							else
-							{
-								symbolTable.insert(
-										name,
-										new StringVariableSymbol(
-												_objectFile.getDataSegmentSize(),
-												value.length() + 1,
-												value
-												)
-										);
-
-								for(int i = 0; i < value.length(); i++)
-								{
-									final byte byteChar = (byte)value.charAt(i);
-									_objectFile.appendDataSegment(byteChar);
-								}
-								_objectFile.appendDataSegment((byte)'\0'); //Add null-termination
-							}
-						}
 					}
 					break;
 
 					case "byte":
 					{
-						error = parseNumberVariableDefinition(
+						parseNumberVariableDefinition(
 								parts,
 								1,
-								symbolTable
+								sourceLine,
+								symbolTable,
+								owningFunction
 								);
 					}
 					break;
 
 					case "word":
 					{
-						error = parseNumberVariableDefinition(
+						parseNumberVariableDefinition(
 								parts,
 								2,
-								symbolTable
+								sourceLine,
+								symbolTable,
+								owningFunction
 								);
 					}
 					break;
 
 					default:
 					{
-						error = String.format("Unknown type `%s`", parts[1]);
+						handleError(
+								String.format("Unknown type `%s`", parts[1]),
+								sourceLine
+								);
 					}
 					break;
 				}
 			}
 		}
-
-		handleError(
-				error,
-				sourceLine
-				);
 	}
 
-	private String parseNumberVariableDefinition(
+	private void parseStringVariableDefinition(
 			final String parts[],
-			final int bytesCount,
-			final SymbolTable symbolTable
+			final SourceLine sourceLine,
+			final SymbolTable symbolTable,
+			final Function owningFunction
 			)
 	{
-		String error = null;
+		String value = sourceLine.getText().substring(
+				parts[0].length() + 1 + parts[1].length() + 1 + parts[2].length() + 1
+				);
 
+		if(value.startsWith("\"") == false)
+		{
+			handleError(
+					"A string litheral must be preceded by quotation mark (\")",
+					sourceLine
+					);
+		}
+		else if(value.endsWith("\"") == false)
+		{
+			handleError(
+					"A string litheral must be succeeded by quotation mark (\")",
+					sourceLine
+					);
+		}
+		else
+		{
+			value = value.substring(1, value.length() - 1); //Slice the quotation marks
+			if(value.contains("\"")) //TODO: Replace with a Regex that looks for a quotation mark that is not escaped
+			{
+				handleError(
+						"A string litheral may not include an unescaped quotation mark",
+						sourceLine
+						);
+			}
+			else
+			{
+				if(owningFunction == null) //Global variable
+				{
+					symbolTable.insert(
+							parts[2],
+							new StringVariableSymbol(
+									_objectFile.getDataSegmentSize(),
+									value.length() + 1,
+									value
+									)
+							);
+
+					for(int i = 0; i < value.length(); i++)
+					{
+						final byte byteChar = (byte)value.charAt(i);
+						_objectFile.appendDataSegment(byteChar);
+					}
+					_objectFile.appendDataSegment((byte)'\0'); //Add null-termination
+				}
+				else //The symbol is owned by a function, so it resides in a stack frame
+				{
+					handleError(
+							"Local variables are not supported",
+							sourceLine
+							);
+				}
+			}
+		}
+	}
+
+	private void parseNumberVariableDefinition(
+			final String parts[],
+			final int bytesCount,
+			final SourceLine sourceLine,
+			final SymbolTable symbolTable,
+			final Function owningFunction
+			)
+	{
 		//parts[] = {"define", "byte" / "word", "<variable name>", "<value>", ...};
 		final int nameIndex = 2;
 		final int valueIndex = 3;
@@ -634,15 +841,31 @@ public final class Assembler
 		{
 			final int value = Utils.parseValue(parts[valueIndex]);
 
-			if(Utils.neededSize(value) > bytesCount)
+			if(value < 0)
 			{
-				error = "Assigned value exceeds variable capacity";
+
+				handleError(
+						"Negative numbers are not supported",
+						sourceLine
+						);
+			}
+			else if(Utils.neededSize(value) > bytesCount)
+			{
+
+				handleError(
+						"Assigned value exceeds variable capacity",
+						sourceLine
+						);
 			}
 			else if(parts.length > 4)
 			{
-				error = "Unrecognized symbols after variable's value";
+
+				handleError(
+						"Unrecognized symbols after variable's value",
+						sourceLine
+						);
 			}
-			else
+			else if(owningFunction == null) //Global variable
 			{
 				symbolTable.insert(
 						parts[nameIndex],
@@ -659,13 +882,22 @@ public final class Assembler
 					_objectFile.appendDataSegment((byte)currentValue);
 				}
 			}
+			else //The symbol is owned by a function, so it resides in a stack frame
+			{
+				handleError(
+						"Local variables are not supported",
+						sourceLine
+						);
+			}
 		}
 		catch(final NumberFormatException ex)
 		{
-			error = "Variable value is not a valid number";
-		}
 
-		return error;
+			handleError(
+					"Variable value is not a valid number",
+					sourceLine
+					);
+		}
 	}
 
 	private void parseInstruction(
@@ -770,7 +1002,9 @@ public final class Assembler
 									argument,
 									location,
 									immediateOperand.getCodeSize(),
-									sourceLine
+									sourceLine,
+									instruction,
+									argumentIndex
 									);
 
 					_unresolvedSymbols.add(unresolvedSymbol);
@@ -788,5 +1022,33 @@ public final class Assembler
 	private ObjectFile getObjectFile()
 	{
 		return _objectFile;
+	}
+
+	private SymbolTable getInnermostSymbolTable(
+			final int sourceLineNumber
+			)
+	{
+		final Function owningFunction = getOwningFunction(
+				sourceLineNumber
+				);
+
+		return (owningFunction == null) ?
+				_objectFile.getSymbolTable() :
+					owningFunction.getLocalSymbolTable();
+	}
+
+	private Function getOwningFunction(
+			final int sourceLineNumber
+			)
+	{
+		for(final Function function : _functions)
+		{
+			if(function.isOwnerOf(sourceLineNumber))
+			{
+				return function;
+			}
+		}
+
+		return null;
 	}
 }

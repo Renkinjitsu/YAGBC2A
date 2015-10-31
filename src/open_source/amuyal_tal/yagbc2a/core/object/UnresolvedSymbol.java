@@ -20,6 +20,7 @@
 
 package open_source.amuyal_tal.yagbc2a.core.object;
 
+import open_source.amuyal_tal.yagbc2a.language.instruction.InstructionTemplate;
 import open_source.amuyal_tal.yagbc2a.parsing.SourceLine;
 
 public final class UnresolvedSymbol
@@ -28,18 +29,24 @@ public final class UnresolvedSymbol
 	private final int _startIndex;
 	private final int _size;
 	private final SourceLine _sourceLine;
+	private final InstructionTemplate _instruction;
+	private final int _operandIndex;
 
 	public UnresolvedSymbol(
 			final String symbolName,
 			final int startIndex,
 			final int size,
-			final SourceLine sourceLine
+			final SourceLine sourceLine,
+			final InstructionTemplate instruction,
+			final int operandIndex
 			)
 	{
 		_symbolName = symbolName;
 		_startIndex = startIndex;
 		_size = size;
 		_sourceLine = sourceLine;
+		_instruction = instruction;
+		_operandIndex = operandIndex;
 	}
 
 	public String getSymbolName()
@@ -60,5 +67,15 @@ public final class UnresolvedSymbol
 	public SourceLine getSourceLine()
 	{
 		return _sourceLine;
+	}
+
+	public InstructionTemplate getInstruction()
+	{
+		return _instruction;
+	}
+
+	public int getOperandIndex()
+	{
+		return _operandIndex;
 	}
 }

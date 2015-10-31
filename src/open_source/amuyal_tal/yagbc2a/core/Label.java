@@ -20,37 +20,52 @@
 
 package open_source.amuyal_tal.yagbc2a.core;
 
+import open_source.amuyal_tal.yagbc2a.core.object.LabelSymbol;
+import open_source.amuyal_tal.yagbc2a.core.object.SymbolTable;
 import open_source.amuyal_tal.yagbc2a.parsing.SourceLine;
+import open_source.amuyal_tal.yagbc2a.utils.Utils;
 
-final class FunctionParsing
+public class Label implements AddressAssignable
 {
 	private final String _name;
-	private final int _startAddress;
-	private final SourceLine _declerationSourceLine;
+	private final SourceLine _decelerationSourceLine;
+	private final SymbolTable _owningSymbolTable;
 
-	public FunctionParsing(
+	private boolean _hasAddressAssigned;
+
+	public Label(
 			final String name,
-			final int startAddress,
-			final SourceLine declerationSourceLine
+			final SourceLine decelerationSourceLine,
+			final SymbolTable owningSymbolTable
 			)
 	{
 		_name = name;
-		_startAddress = startAddress;
-		_declerationSourceLine = declerationSourceLine;
+		_decelerationSourceLine = decelerationSourceLine;
+		_owningSymbolTable = owningSymbolTable;
+
+		_hasAddressAssigned = false;
 	}
 
-	public String getName()
+	@Override
+	public void assignAddress(
+			final int address
+			)
 	{
-		return _name;
+		Utils.assertCondition(_hasAddressAssigned == false);
+
+		_hasAddressAssigned = true;
+
+		_owningSymbolTable.insert(
+				_name,
+				new LabelSymbol(
+						address
+						)
+				);
 	}
 
-	public int getStartAddress()
+	@Override
+	public int getDecelerationLineNumber()
 	{
-		return _startAddress;
-	}
-
-	public SourceLine getDeclerationSourceLine()
-	{
-		return _declerationSourceLine;
+		return _decelerationSourceLine.getLineNumber();
 	}
 }
