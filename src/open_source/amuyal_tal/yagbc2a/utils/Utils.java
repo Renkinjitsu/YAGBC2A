@@ -20,30 +20,10 @@
 
 package open_source.amuyal_tal.yagbc2a.utils;
 
-import open_source.amuyal_tal.yagbc2a.BootHeader;
 import open_source.amuyal_tal.yagbc2a.InternalErrorException;
-import open_source.amuyal_tal.yagbc2a.object.ObjectFile;
-import open_source.amuyal_tal.yagbc2a.object.Symbol;
-import open_source.amuyal_tal.yagbc2a.object.SymbolTable;
-import open_source.amuyal_tal.yagbc2a.object.VariableSymbol;
 
 public final class Utils
 {
-	public static int getSymbolAbsoluteLocation(
-			final String symbolName,
-			final ObjectFile objectFile
-			)
-	{
-		final SymbolTable symbolTable = objectFile.getSymbolTable();
-		final Symbol symbol = symbolTable.getSymbol(symbolName);
-		final int segmentRelativeAddress = symbol.getAddress();
-
-		final int bootHeaderToSegmentOffset =
-				(symbol instanceof VariableSymbol) ? 0 : objectFile.getDataSegmentSize(); //Data segment precedes code segment
-
-		return BootHeader.getSize() + bootHeaderToSegmentOffset + segmentRelativeAddress;
-	}
-
 	public static boolean isSignedByte(final String stringPotentialValue)
 	{
 		boolean result;

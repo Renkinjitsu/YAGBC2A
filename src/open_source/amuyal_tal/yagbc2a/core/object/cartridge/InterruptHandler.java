@@ -1,0 +1,36 @@
+/*
+    Yet Another Gameboy Classic/Color Assembler (YAGBC2A) can compile Gameboy-compatible images.
+    Copyright (C) 2015  Tal Amuyal
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+	Contact information (email): TalAmuyal@gmail.com
+*/
+
+package open_source.amuyal_tal.yagbc2a.core.object.cartridge;
+
+public class InterruptHandler extends MemorySection
+{
+	private static final int segmentSize = 8; //H/W configuration (in bytes)
+
+	public InterruptHandler(
+			final String interruptName
+			)
+	{
+		super(interruptName + " interrupt handler", segmentSize, (byte)0x00); //`0x00` is `NOP`
+
+		//Fill with default "empty" implementation
+		super.setByte(0, (byte)0xD9); //`0xD9` is `return-interrupt (void)`
+	}
+}

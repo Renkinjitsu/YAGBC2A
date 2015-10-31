@@ -23,9 +23,10 @@ package open_source.amuyal_tal.yagbc2a;
 import java.util.LinkedList;
 import java.util.List;
 
-import open_source.amuyal_tal.yagbc2a.data.InstructionParameter;
-import open_source.amuyal_tal.yagbc2a.instruction.FlagInfluance;
-import open_source.amuyal_tal.yagbc2a.instruction.InstructionTemplate;
+import open_source.amuyal_tal.yagbc2a.language.instruction.FlagInfluance;
+import open_source.amuyal_tal.yagbc2a.language.instruction.InstructionTemplate;
+import open_source.amuyal_tal.yagbc2a.language.operand.Operand;
+import open_source.amuyal_tal.yagbc2a.parsing.CommandTokens;
 
 public final class InstructionDataBase
 {
@@ -595,7 +596,7 @@ public final class InstructionDataBase
 			{
 				for(int j = 0; j < instructionTemplate.getParametersCount(); j++)
 				{
-					final InstructionParameter parameter = instructionTemplate.getParameter(j);
+					final Operand parameter = instructionTemplate.getParameter(j);
 					if(parameter.matches(tokens.getArgument(j)))
 					{
 						i = Integer.max(i, j + 1);
