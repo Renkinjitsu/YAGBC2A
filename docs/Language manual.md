@@ -99,3 +99,7 @@ Example:
 ## Instructions
 
 A full list of the processor's instructions can be found [here](http://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html).
+
+## Relative instructions
+
+Relative instructions (such as HDL and JR) are used in conjunction with absolute values and symbols. On compile-time, the offset is calculated using the provided absolute address.
