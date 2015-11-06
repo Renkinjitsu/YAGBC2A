@@ -50,7 +50,7 @@ public final class OperandDataBase
 			final Operand d16 = new ImmediateNumberOperand("d16", false, true, false);
 			final Operand a8 = new ImmediateNumberOperand("a8", false, false, true);
 			final Operand a16 = new ImmediateNumberOperand("a16", false, false, false);
-			final Operand r8 = new ImmediateNumberOperand("r8", false, true, true);
+			final Operand r8 = new ImmediateNumberOperand("r8", true, true, true);
 
 			_database.add(d8);
 			_database.add(d16);

@@ -433,7 +433,6 @@ public final class Assembler
 						Utils.assertCondition(unresolvedSymbol.getSize() == 1);
 
 						final int lastOperandIndex = instruction.getParametersCount() - 1;
-						Utils.assertCondition(1 == lastOperandIndex);
 						Utils.assertCondition(unresolvedSymbol.getOperandIndex() == lastOperandIndex);
 
 						//The address of the instruction's beginning
@@ -927,6 +926,68 @@ public final class Assembler
 			}
 			else
 			{
+				if(tokens.getCommand().equals("JR"))
+				{
+					final int lastOperandIndex = tokens.getArgumentsCount() - 1;
+
+					//The address of the instruction's beginning
+					final int usageAddress =
+							BootHeader.getSize() +
+							_objectFile.getDataSegmentSize() +
+							_objectFile.getCodeSegmentSize(); //This calculation result in the amount of bytes in the file which is the next location to be filled
+
+					try
+					{
+						final int absoluteAddress = Utils.parseValue(tokens.getArgument(lastOperandIndex));
+
+						//Wished amount of bytes to skip
+						final int addressesOffset = absoluteAddress - usageAddress;
+
+						//Actual amounts of bytes to skip
+						final int jumpBytes = addressesOffset - 2;
+
+						if(jumpBytes == (int)((byte)jumpBytes))
+						{
+							tokens.replaceArgument(lastOperandIndex, String.valueOf(jumpBytes));
+						}
+						else
+						{
+							error = "Distance between jump command and destination address is too far for a relative jump";
+						}
+					}
+					catch(final NumberFormatException ex)
+					{
+						//The address operand probably contains a symbol which is handled seperatly later on
+					}
+				}
+				else if(tokens.getCommand().equals("LD") &&
+						tokens.getArgumentsCount() == 2 &&
+						tokens.getArgument(0).equals("HL") &&
+						tokens.getArgument(1).equals("SP+r8"))
+				{
+					//TODO: Implement together with function-local variables
+
+					error = "Function-local variables are not supported";
+				}
+				else if(tokens.getCommand().equals("LDH"))
+				{
+					//Command is either `LDH (a8),A` or `LDH A,(a8)`
+					final int addressOperandIndex = (tokens.getArgument(0).startsWith("(")) ? 0 : 1;
+
+					final String addressOperandValue = tokens.getArgument(addressOperandIndex);
+					final String slicedAddressOperandValue = addressOperandValue.substring(1, addressOperandValue.length() - 1);
+					final int absoluteAddress = Utils.parseValue(slicedAddressOperandValue);
+
+					if(absoluteAddress < 0xFF00)
+					{
+						error = "Address must be in the range [0xFF00, 0xFFFF]";
+					}
+					else
+					{
+						tokens.replaceArgument(addressOperandIndex, String.format("(0x%02X)", absoluteAddress - 0xFF00));
+					}
+				}
+
 				instruction = InstructionDataBase.match(tokens);
 				if(instruction == null)
 				{
@@ -945,10 +1006,9 @@ public final class Assembler
 								);
 						if(instruction == null)
 						{
-							error = String.format("Parameter `%s` doesn't fit for instruction `%s` as argument %d",
-									tokens.getArgument(i),
-									tokens.getCommand(),
-									i
+							error = String.format("Parameter `%d` doesn't fit for instruction `%s`",
+									i,
+									tokens.getCommand()
 									);
 						}
 					}
@@ -960,13 +1020,11 @@ public final class Assembler
 		{
 			_objectFile.appendCode(instruction.assemble(tokens));
 		}
-		else
-		{
-			handleError(
-					error,
-					sourceLine
-					);
-		}
+
+		handleError(
+				error,
+				sourceLine
+				);
 	}
 
 	private InstructionTemplate getInstructionPlaceHolder(
